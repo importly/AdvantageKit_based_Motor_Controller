@@ -17,10 +17,10 @@ import com.revrobotics.CANSparkBase.ControlType;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.SparkPIDController;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedDashboardBoolean;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
@@ -39,14 +39,16 @@ public class Robot extends LoggedRobot {
   private String autoSelected;
   private final LoggedDashboardChooser<String> chooser =
       new LoggedDashboardChooser<>("Auto Choices");
-
-  private static int motorCount = 1;
-
   // Assuming LoggedDashboardNumber is a class and motorCount is the number of motors
-  LoggedDashboardNumber[] targetVelocities = {new LoggedDashboardNumber("Motor 0", 0.0)};
-  LoggedDashboardNumber thing = new LoggedDashboardNumber("Intake", 0.0);
+  LoggedDashboardNumber intake = new LoggedDashboardNumber("Intake", 0.0);
+  LoggedDashboardNumber shooterup = new LoggedDashboardNumber("shooterUp", 0.0);
+  LoggedDashboardNumber shooterdown = new LoggedDashboardNumber("shooterDown", 0.0);
+  LoggedDashboardBoolean linkedShooter = new LoggedDashboardBoolean("link", false);
+  LoggedDashboardBoolean zero = new LoggedDashboardBoolean("zero", false);
   SparkPIDController[] pidControllers;
   CANSparkMax[] motors = {
+    new CANSparkMax(40, MotorType.kBrushless),
+    new CANSparkMax(41, MotorType.kBrushless),
     new CANSparkMax(42, MotorType.kBrushless),
   };
   /**
@@ -81,11 +83,18 @@ public class Robot extends LoggedRobot {
         Logger.addDataReceiver(new WPILOGWriter());
         Logger.addDataReceiver(new NT4Publisher());
 
-        // Create an array of PID controllers
-        pidControllers = new SparkPIDController[motors.length];
-
-        // Initialize each PID controller and set PID coefficients
         for (int i = 0; i < motors.length; i++) {
+          // motors[i].restoreFactoryDefaults();
+          // motors[i].setCANTimeout(250);
+          // motors[i].setSmartCurrentLimit(40);
+          // motors[i].enableVoltageCompensation(12.0);`
+          // motors[i].burnFlash()
+
+          // RelativeEncoder driveEncoder = motors[i].getEncoder();
+          // driveEncoder.setPosition(0.0);
+          // driveEncoder.setMeasurementPeriod(10);
+          // driveEncoder.setAverageDepth(2);
+
           pidControllers[i] = motors[i].getPIDController();
 
           // Set PID coefficients
@@ -95,8 +104,34 @@ public class Robot extends LoggedRobot {
           pidControllers[i].setFF(0.00008);
           pidControllers[i].setIZone(0.0);
           pidControllers[i].setOutputRange(-1.0, 1.0);
-          // pidControllers[i].setFeedbackDevice(motors[i].getEncoder());
         }
+
+        // pidControllers[0] = motors[0].getPIDController();
+        // pidControllers[0].setP(10e-5);
+        // pidControllers[0].setI(0.0);
+        // pidControllers[0].setD(0.0);
+        // pidControllers[0].setFF(0.00008);
+        // pidControllers[0].setIZone(0.0);
+        // pidControllers[0].setOutputRange(-1.0, 1.0);
+
+        // pidControllers[1] = motors[1].getPIDController();
+        // pidControllers[1].setP(10e-5);
+        // pidControllers[1].setI(0.0);
+        // pidControllers[1].setD(0.0);
+        // pidControllers[1].setFF(0.00008);
+        // pidControllers[1].setIZone(0.0);
+        // pidControllers[1].setOutputRange(-1.0, 1.0);
+
+        // pidControllers[2] = motors[2].getPIDController();
+        // pidControllers[2].setP(10e-5);
+        // pidControllers[2].setI(0.0);
+        // pidControllers[2].setD(0.0);
+        // pidControllers[2].setFF(0.00008);
+        // pidControllers[2].setIZone(0.0);
+        // pidControllers[2].setOutputRange(-1.0, 1.0);
+
+        // motors[1].setInverted(true);
+        // motors[2].setInverted(true);
 
         break;
 
@@ -158,10 +193,24 @@ public class Robot extends LoggedRobot {
   @Override
   public void teleopPeriodic() {
 
-    for (int i = 0; i < pidControllers.length; i++) {
-      System.out.println(SmartDashboard.getNumber("AdvantageKit/DashboardInputs/Motor 0", 0.0));
-      pidControllers[i].setReference(thing.get(), ControlType.kVelocity);
+    if (linkedShooter.get()) {
+      shooterdown.set(shooterup.get());
     }
+
+    if (zero.get()) {
+      pidControllers[0].setReference(0, ControlType.kVelocity);
+      pidControllers[1].setReference(0, ControlType.kVelocity);
+      pidControllers[2].setReference(0, ControlType.kVelocity);
+      zero.set(false);
+    }
+
+    pidControllers[0].setReference(intake.get(), ControlType.kVelocity);
+    pidControllers[1].setReference(shooterup.get(), ControlType.kVelocity);
+    pidControllers[2].setReference(shooterdown.get(), ControlType.kVelocity);
+
+    System.out.println("intake " + intake.get());
+    System.out.println("up " + shooterup.get());
+    System.out.println("down " + shooterdown.get());
   }
 
   /** This function is called once when the robot is disabled. */
