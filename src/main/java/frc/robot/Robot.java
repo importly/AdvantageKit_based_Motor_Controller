@@ -47,9 +47,9 @@ public class Robot extends LoggedRobot {
   LoggedDashboardBoolean zero = new LoggedDashboardBoolean("zero", false);
   SparkPIDController[] pidControllers;
   CANSparkMax[] motors = {
-    new CANSparkMax(40, MotorType.kBrushless),
-    new CANSparkMax(41, MotorType.kBrushless),
-    new CANSparkMax(42, MotorType.kBrushless),
+    new CANSparkMax(40, MotorType.kBrushless), // intake
+    new CANSparkMax(41, MotorType.kBrushless), // up shooter
+    new CANSparkMax(42, MotorType.kBrushless), // down shooter
   };
   /**
    * This function is run when the robot is first started up and should be used for any
